@@ -6,3 +6,6 @@
 
 # user-specific files
 *.suo
+
+# ignore downloaded packages
+**/packages/*
