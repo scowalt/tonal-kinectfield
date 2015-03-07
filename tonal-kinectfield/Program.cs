@@ -6,16 +6,23 @@ using System.Threading.Tasks;
 
 using Microsoft.Kinect;
 
+using SuperWebSocket;
+
 namespace tonal_kinectfield
 {
     class Program
     {
+        static WebSocketServer appServer;
         static void Main(string[] args)
         {
             InitializeKinect();
 
+            InitializeWebSockets();
+
             // close program on console return
             Console.Read();
+
+            appServer.Stop();
         }
 
         private static void InitializeKinect()
@@ -43,9 +50,38 @@ namespace tonal_kinectfield
             kinectSensor.Open();
         }
 
+        private static void InitializeWebSockets()
+        {
+            appServer = new WebSocketServer();
+
+            bool success = appServer.Setup(7446);
+            if (!success)
+            {
+                // TODO ???
+                throw new Exception("failed to setup WebSocket server");
+            }
+
+            bool started = appServer.Start();
+            appServer.NewSessionConnected += Socket_NewSession;
+
+            if (!started)
+            {
+                throw new Exception("failed to start WebSocket server");
+            }
+        }
+
+        private static void Socket_NewSession(WebSocketSession session)
+        {
+            Console.WriteLine("new Websocket client");
+        }
+
         private static void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
-            Console.WriteLine("frame arrived");
+            List<WebSocketSession> sessions = appServer.GetAllSessions().ToList<WebSocketSession>();
+            foreach (WebSocketSession session in sessions)
+            {
+                session.Send("test");
+            }
         }
     }
 }
