@@ -12,9 +12,17 @@ namespace tonal_kinectfield
     {
         static void Main(string[] args)
         {
+            InitializeKinect();
+
+            // close program on console return
+            Console.Read();
+        }
+
+        private static void InitializeKinect()
+        {
             // get the sensor
             KinectSensor kinectSensor = KinectSensor.GetDefault();
-            
+
             // get the coordinate mapper from the sensor
             CoordinateMapper coordinateMapper = kinectSensor.CoordinateMapper;
 
@@ -33,9 +41,6 @@ namespace tonal_kinectfield
 
             // open the sensor
             kinectSensor.Open();
-
-            // close program on console return
-            Console.Read();
         }
 
         private static void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
