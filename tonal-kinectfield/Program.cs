@@ -4,15 +4,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Kinect stuff
 using Microsoft.Kinect;
 
+// WebSocket library
 using SuperWebSocket;
+
+// JSON serialization
+using Newtonsoft.Json;
 
 namespace tonal_kinectfield
 {
     class Program
     {
+        static Body[] bodies;
         static WebSocketServer appServer;
+        static readonly int PORT = 7446;
         static void Main(string[] args)
         {
             InitializeKinect();
@@ -54,7 +61,7 @@ namespace tonal_kinectfield
         {
             appServer = new WebSocketServer();
 
-            bool success = appServer.Setup(7446);
+            bool success = appServer.Setup(PORT);
             if (!success)
             {
                 // TODO ???
@@ -68,19 +75,55 @@ namespace tonal_kinectfield
             {
                 throw new Exception("failed to start WebSocket server");
             }
+
+            Console.WriteLine("WebSocket Server Initialized on port " + PORT);
         }
 
         private static void Socket_NewSession(WebSocketSession session)
         {
-            Console.WriteLine("new Websocket client");
+            Console.WriteLine("New WebSocket client connected");
         }
 
         private static void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
         {
-            List<WebSocketSession> sessions = appServer.GetAllSessions().ToList<WebSocketSession>();
-            foreach (WebSocketSession session in sessions)
+            if (appServer == null)
             {
-                session.Send("test");
+                Console.WriteLine("WebSocket server doesn't exist");
+                return;
+            }            
+
+            bool dataReceived = false;
+
+            using (BodyFrame bodyFrame = e.FrameReference.AcquireFrame())
+            {
+                if (bodyFrame != null)
+                {
+                    dataReceived = true;
+
+                    if (bodies == null)
+                    {
+                        bodies = new Body[bodyFrame.BodyCount];
+                    }
+
+                    bodyFrame.GetAndRefreshBodyData(bodies);
+                }
+            }
+
+            if (dataReceived)
+            {
+                List<WebSocketSession> sessions = appServer.GetAllSessions().ToList<WebSocketSession>();
+                foreach (WebSocketSession session in sessions)
+                {
+                    foreach (Body body in bodies)
+                    {
+                        if (body.IsTracked)
+                        {
+                            string json = JsonConvert.SerializeObject(body);
+                            session.Send(json);
+                        }
+                    }
+                    
+                }
             }
         }
     }
