@@ -19,6 +19,7 @@ namespace tonal_kinectfield
     {
         static Body[] bodies;
         static WebSocketServer appServer;
+        static KinectSensor kinectSensor;
         static readonly int PORT = 7446;
         static void Main(string[] args)
         {
@@ -35,7 +36,7 @@ namespace tonal_kinectfield
         private static void InitializeKinect()
         {
             // get the sensor
-            KinectSensor kinectSensor = KinectSensor.GetDefault();
+            kinectSensor = KinectSensor.GetDefault();
 
             // get the coordinate mapper from the sensor
             CoordinateMapper coordinateMapper = kinectSensor.CoordinateMapper;
@@ -82,6 +83,11 @@ namespace tonal_kinectfield
         private static void Socket_NewSession(WebSocketSession session)
         {
             Console.WriteLine("New WebSocket client connected");
+
+            // get information about the kinect sensor
+            FrameDescription frameDescription = kinectSensor.DepthFrameSource.FrameDescription;
+            string json = JsonConvert.SerializeObject(frameDescription);
+            session.Send(json);
         }
 
         private static void Reader_FrameArrived(object sender, BodyFrameArrivedEventArgs e)
